@@ -68,3 +68,35 @@ Le projet ne peut être ni démarré ni validé sans les éléments ci-dessous. 
 - Dépôt Git avec un historique de commits régulier et lisible, auquel chaque membre contribue.
 - README : installation, configuration, liste des commandes du bot.
 - Soutenance individuelle : démonstration en direct, puis modification de code demandée en séance sur votre propre projet.
+
+## Démarrage du bot (API HTTP Discord)
+
+Le bot reçoit les interactions avec Express et vérifie leur signature avec
+`discord-interactions`, comme dans le [tutoriel officiel](https://docs.discord.com/developers/quick-start/getting-started).
+Les appels à l’API Discord utilisent le `fetch` natif de Node.js (Node 20 ou supérieur).
+
+1. Installer les dépendances : `npm install`.
+2. Copier la configuration : `cp .env.example .env`.
+3. Compléter `.env` :
+   - `APP_ID` : Application ID dans General Information du portail Discord.
+   - `PUBLIC_KEY` : Public Key dans cette même page.
+   - `DISCORD_TOKEN` : token du bot, à garder secret.
+   - `GUILD_ID` : identifiant du serveur de test (activer le mode développeur de Discord, puis clic droit sur le serveur → Copier l’identifiant).
+   - `TRIGRAMME` : les trois lettres minuscules du groupe, à la place de `abc`.
+4. Lancer le serveur : `npm run dev`.
+5. Dans un second terminal, exposer le serveur avec ngrok : `ngrok http 3000` (ngrok doit être installé et configuré).
+6. Dans le portail Discord, renseigner Interactions Endpoint URL avec l’URL HTTPS fournie par ngrok suivie de `/interactions`, puis sauvegarder.
+7. Enregistrer la commande sur le serveur de test : `npm run register`.
+8. Tester `/abc-ping` dans Discord, en remplaçant `abc` par le trigramme choisi.
+
+L’installation de l’application sur le serveur doit autoriser `applications.commands`.
+Le serveur local et ngrok doivent rester lancés pour recevoir les commandes.
+Si l’URL ngrok change, mettre à jour Interactions Endpoint URL.
+
+| Commande | Paramètres | Fonction |
+| --- | --- | --- |
+| `/abc-ping` | Aucun | Répond pour vérifier le fonctionnement du bot. |
+
+Cette commande technique ne consulte ni ne modifie les présences.
+Les commandes métier, le spreadsheet et l’authentification restent à implémenter.
+Ne jamais committer `.env`. Le token du bot est distinct des tokens de session exigés par le sujet.
