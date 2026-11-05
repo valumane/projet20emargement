@@ -1,5 +1,4 @@
 import { Client, Events, GatewayIntentBits } from 'discord.js';
-
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 
 client.on(Events.ClientReady, readyClient => {
@@ -11,8 +10,8 @@ client.on(Events.InteractionCreate, async interaction => {
 
   if (interaction.commandName === 'blep') {
     const animal = interaction.options.getString('animal', true);
-
     await interaction.reply(`Tu as choisi : ${animal}`);
+    console.log(interaction.user.displayName+" a choisis : "+animal);//username pour le nom displayName pour pseudo
   }
 });
 

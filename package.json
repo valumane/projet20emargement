@@ -1,6 +1,6 @@
 {
   "name": "projet20emargement",
-  "type":"module",
+  "type": "module",
   "version": "1.0.0",
   "description": "**Groupe :** ________ · **Trigramme :** ___ (préfixe de toutes vos commandes) · **Pile :** NodeJS + React · **Données :** un spreadsheet propre au groupe",
   "main": "index.js",

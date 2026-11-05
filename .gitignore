@@ -1,0 +1,19 @@
+# Dépendances
+node_modules/
+
+# Configuration locale et secrets
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+
+# Fichiers générés
+dist/
+build/
+coverage/
+
+# Fichiers du système
+.DS_Store
+Thumbs.db
