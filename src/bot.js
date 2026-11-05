@@ -7,13 +7,12 @@ client.on(Events.ClientReady, readyClient => {
 });
 
 client.on(Events.InteractionCreate, async interaction => {
-  if (!interaction.isChatInputCommand()){
-  	console.log("interaction");
-    return;
-  }
+  if (!interaction.isChatInputCommand()) return;
 
-  if (interaction.commandName === 'ping') {
-    await interaction.reply('Pong!');
+  if (interaction.commandName === 'blep') {
+    const animal = interaction.options.getString('animal', true);
+
+    await interaction.reply(`Tu as choisi : ${animal}`);
   }
 });
 
