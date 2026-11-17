@@ -17,3 +17,7 @@ coverage/
 # Fichiers du système
 .DS_Store
 Thumbs.db
+
+# Données locales de présence
+data/*.csv
+data/*.tmp
