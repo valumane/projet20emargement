@@ -1,50 +1,71 @@
 import 'dotenv/config';
+import { commands } from './commands.js';
 
-
+for (const name of ['APP_ID', 'GUILD_ID', 'DISCORD_TOKEN']) {
+  if (!process.env[name]) throw new Error(`${name} est obligatoire.`);
+}
 const url = `https://discord.com/api/v10/applications/${process.env.APP_ID}/guilds/${process.env.GUILD_ID}/commands`;
 
-// This is an example CHAT_INPUT or Slash Command, with a type of 1
-const command = {
-    "name": "blep",
-    "type": 1,
-    "description": "Send a random adorable animal photo",
-    "options": [
-        {
-            "name": "animal",
-            "description": "The type of animal",
-            "type": 3,
-            "required": true,
-            "choices": [
-                {
-                    "name": "Dog",
-                    "value": "animal_dog"
-                },
-                {
-                    "name": "Cat",
-                    "value": "animal_cat"
-                },
-                {
-                    "name": "Penguin",
-                    "value": "animal_penguin"
-                }
-            ]
-        }
-    ]
-};
+// Chaque objet décrit une commande à enregistrer sur le serveur Discord.
+const commands = [
+  {
+    name: 'abc-emarger',
+    type: 1,
+    description: 'Enregistrer ma présence ou mon absence',
+    options: [
+      { name: 'date', description: 'Date au format AAAA-MM-JJ', type: 3, required: true },
+      {
+        name: 'demi-journee', description: 'Demi-journée concernée', type: 3, required: true,
+        choices: [{ name: 'Matin', value: 'matin' }, { name: 'Après-midi', value: 'apres-midi' }],
+      },
+      {
+        name: 'statut', description: 'Présent ou absent', type: 3, required: true,
+        choices: [{ name: 'Présent', value: 'present' }, { name: 'Absent', value: 'absent' }],
+      },
+      { name: 'motif', description: 'Motif obligatoire pour une absence', type: 3, max_length: 1000 },
+    ],
+  },
+  {
+    name: 'abc-all-presences',
+    type: 1,
+    description: 'Afficher les présences du tableur',
+  },
+  {
+    name: 'abc-my-presence',
+    type: 1,
+    description: 'Consulter ma présence à une date',
+    options: [
+      {
+        name: 'date',
+        description: 'Date au format AAAA-MM-JJ',
+        type: 3, // Paramètre texte
+        required: true,
+      },
+    ],
+  },
+  {
+    name: 'emargement',
+    description: 'Date au format AAAA-MM-JJ',
+    type: 3,
+    required: true
+  }
+];
 
-
-const response = await fetch(url, {
+// POST ajoute ou met à jour chaque commande sans supprimer les autres.
+for (const command of commands) {
+  const response = await fetch(url, {
     method: 'POST',
     headers: {
-        Authorization: `Bot ${process.env.DISCORD_TOKEN}`,
-        'Content-Type': 'application/json',
+      Authorization: `Bot ${process.env.DISCORD_TOKEN}`,
+      'Content-Type': 'application/json',
     },
     body: JSON.stringify(command),
-});
+  });
 
-if (response.ok) {
-    console.log('Commande /blep enregistrée !');
-} else {
+  if (response.ok) {
+    console.log(`Commande /${command.name} enregistrée !`);
+  } else {
     console.error('Erreur Discord :', await response.json());
     process.exitCode = 1;
+  }
 }

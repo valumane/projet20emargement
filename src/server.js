@@ -1,63 +1,93 @@
+import express from 'express';
 import { createServer as createHttpServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
+import { readFileSync, writeFileSync, renameSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { dirname, join } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
+import { stringify } from 'csv-stringify/sync';
+import { parse } from 'csv-parse/sync';
 
-const publicDirectory = join(dirname(fileURLToPath(import.meta.url)), '..', 'public');
-const projectDirectory = join(publicDirectory, '..');
-const files = new Map([
-  ['/', ['index.html', 'text/html; charset=utf-8']],
-  ['/index.html', ['index.html', 'text/html; charset=utf-8']],
-  ['/site.js', ['site.js', 'text/javascript; charset=utf-8']],
-  ['/csv.js', ['csv.js', 'text/javascript; charset=utf-8']],
-]);
+const projectDirectory = join(dirname(fileURLToPath(import.meta.url)), '..');
+const publicDirectory = join(projectDirectory, 'public');
 const defaultCsvFile = join(projectDirectory, 'data', 'presences.csv');
 
+// Un seul serveur pour le site et l'API du bot.
 export function createServer({ csvFile = defaultCsvFile } = {}) {
-  return createHttpServer(async (request, response) => {
-    if (request.method !== 'GET' && request.method !== 'HEAD') {
-      response.writeHead(405, { Allow: 'GET, HEAD', 'Content-Type': 'text/plain; charset=utf-8' });
-      response.end('Méthode non autorisée.');
-      return;
-    }
+  const app = express();
+  app.use(express.json());
+  app.use((req, res, next) => {
+    res.set('X-Content-Type-Options', 'nosniff');
+    next();
+  });
 
-    const pathname = new URL(request.url, 'http://localhost').pathname;
-    const file = pathname === '/data/presences.csv'
-      ? [csvFile, 'text/csv; charset=utf-8']
-      : files.get(pathname);
-    if (!file) {
-      response.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
-      response.end('Page introuvable.');
-      return;
-    }
-
+  // Le bot récupère les lignes du CSV sous forme de JSON.
+  app.get('/api/presences', async (req, res) => {
     try {
-      const filePath = pathname === '/data/presences.csv'
-        ? csvFile
-        : join(publicDirectory, file[0]);
-      const content = await readFile(filePath);
-      response.writeHead(200, {
-        'Content-Type': file[1],
-        'X-Content-Type-Options': 'nosniff',
+      const contenu = await readFile(csvFile, 'utf8');
+      const presences = parse(contenu, {
+        columns: true,
+        skip_empty_lines: true,
       });
-      response.end(request.method === 'HEAD' ? undefined : content);
+      res.set('Cache-Control', 'no-store');
+      res.json(presences);
     } catch (error) {
-      if (error.code === 'ENOENT') {
-        response.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
-        response.end(pathname === '/data/presences.csv' ? 'Fichier CSV introuvable.' : 'Page introuvable.');
-        return;
-      }
       console.error(error);
-      response.writeHead(500, { 'Content-Type': 'text/plain; charset=utf-8' });
-      response.end('Impossible de charger le site.');
+      res.status(500).json({ error: 'Impossible de lire le fichier.' });
     }
   });
+
+  // Le bot enregistre l'émargement dans le même CSV que celui utilisé par le site.
+  app.post('/api/presences', (req, res) => {
+    try {
+      const { discordId, date, demiJournee, statut, motif = '' } = req.body;
+      if (statut === 'absent' && !motif.trim()) {
+        return res.status(400).json({ error: 'Un motif est nécessaire pour une absence.' });
+      }
+
+      const presences = parse(readFileSync(csvFile, 'utf8'), {
+        columns: true,
+        skip_empty_lines: true,
+      });
+      const presence = { discordId, date, demiJournee, statut, motif };
+
+      // Remplacer la ligne si cet étudiant a déjà émargé pour cette demi-journée.
+      const index = presences.findIndex(ligne =>
+        ligne.discordId === discordId && ligne.date === date && ligne.demiJournee === demiJournee
+      );
+      if (index === -1) presences.push(presence);
+      else presences[index] = presence;
+
+      const contenu = stringify(presences, {
+        header: true,
+        columns: ['discordId', 'date', 'demiJournee', 'statut', 'motif'],
+      });
+      const temporaire = `${csvFile}.tmp`;
+      writeFileSync(temporaire, contenu);
+      renameSync(temporaire, csvFile);
+      res.status(index === -1 ? 201 : 200).json(presence);
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: 'Impossible d’enregistrer l’émargement.' });
+    }
+  });
+
+  // Le site de ton binôme charge le fichier CSV directement à cette adresse.
+  app.get('/data/presences.csv', (req, res) => {
+    res.set('Cache-Control', 'no-store');
+    res.sendFile(resolve(csvFile));
+  });
+
+  // Servir index.html, site.js, csv.js et les autres fichiers du site.
+  app.use(express.static(publicDirectory));
+
+  return createHttpServer(app);
 }
 
-if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
+// Ne pas démarrer automatiquement lorsque le module est importé dans un test.
+if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])) {
   const port = Number(process.env.PORT || 3000);
-  const host = process.env.HOST || 'localhost';
+  const host = process.env.HOST || '127.0.0.1';
   createServer().listen(port, host, () => {
-    console.log(`Site prêt sur http://${host}:${port}`);
+    console.log(`Site et API prêts sur http://${host}:${port}`);
   });
 }
