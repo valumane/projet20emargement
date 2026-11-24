@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Suivi des présences</title>
+  </head>
+  <body>
+    <header>
+      <h1>Suivi des présences</h1>
+      <nav aria-label="Navigation principale">
+        <a href="#accueil">Accueil</a>
+        <a href="#etudiants">Étudiants</a>
+        <a href="#connexion">Connexion</a>
+      </nav>
+    </header>
+
+    <main>
+      <section id="accueil">
+        <h2>Accueil</h2>
+        <p>Le suivi des présences se fait sur papier et les justificatifs d'absence se perdent.</p>
+        <p>Ce site est justement la afin de répondre a cette problèmatique</p>
+      </section>
+
+      <section aria-labelledby="import-title">
+        <h2 id="import-title">Données des présences</h2>
+        <p>Colonnes requises : discordId, date, demiJournee, statut, motif. Les variantes id_etudiant, demi_journee, statut_presence et motif_absence sont aussi reconnues.</p>
+        <p id="import-message" role="status" aria-live="polite">Chargement du fichier CSV…</p>
+      </section>
+
+      <section id="etudiants">
+        <h2>Étudiants</h2>
+        <form id="search-form">
+          <label for="search">Rechercher par nom ou identifiant</label>
+          <input id="search" type="search" autocomplete="off">
+          <button type="submit">Rechercher</button>
+          <button id="clear-search" type="button">Afficher tous</button>
+        </form>
+        <p id="list-message" role="status" aria-live="polite">Importez un fichier CSV pour afficher les étudiants.</p>
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Étudiant</th>
+              <th scope="col">Présences</th>
+              <th scope="col">Absences</th>
+              <th scope="col">Taux de présence</th>
+              <th scope="col">Détail</th>
+            </tr>
+          </thead>
+          <tbody id="student-list"></tbody>
+        </table>
+      </section>
+
+      <section id="student-detail" hidden aria-live="polite">
+        <h2 id="detail-title">Détail de l’étudiant</h2>
+        <p id="detail-message"></p>
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Date</th>
+              <th scope="col">Demi-journée</th>
+              <th scope="col">Statut</th>
+              <th scope="col">Motif d’absence</th>
+            </tr>
+          </thead>
+          <tbody id="attendance-list"></tbody>
+        </table>
+      </section>
+    </main>
+    <script type="module" src="/site.js"></script>
+  </body>
+</html>
