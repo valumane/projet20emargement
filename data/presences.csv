@@ -1,0 +1,5 @@
+discordId,date,demiJournee,statut,motif
+123456789,2026-11-24,matin,present,
+987654321,2026-11-24,matin,absent,Rendez-vous
+543461037693730827,2026-11-24,apres-midi,present,
+543461037693730827,2026,apres-midi,present,
