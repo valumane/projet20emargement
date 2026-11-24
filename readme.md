@@ -69,34 +69,46 @@ Le projet ne peut être ni démarré ni validé sans les éléments ci-dessous. 
 - README : installation, configuration, liste des commandes du bot.
 - Soutenance individuelle : démonstration en direct, puis modification de code demandée en séance sur votre propre projet.
 
-## Démarrage du bot (API HTTP Discord)
+## Démarrage local : API CSV et bot Discord
 
-Le bot reçoit les interactions avec Express et vérifie leur signature avec
-`discord-interactions`, comme dans le [tutoriel officiel](https://docs.discord.com/developers/quick-start/getting-started).
-Les appels à l’API Discord utilisent le `fetch` natif de Node.js (Node 20 ou supérieur).
+Prérequis : Node.js 20 ou supérieur et une application Discord installée sur votre serveur de test avec le scope `applications.commands`.
 
-1. Installer les dépendances : `npm install`.
-2. Copier la configuration : `cp .env.example .env`.
-3. Compléter `.env` :
-   - `APP_ID` : Application ID dans General Information du portail Discord.
-   - `PUBLIC_KEY` : Public Key dans cette même page.
-   - `DISCORD_TOKEN` : token du bot, à garder secret.
-   - `GUILD_ID` : identifiant du serveur de test (activer le mode développeur de Discord, puis clic droit sur le serveur → Copier l’identifiant).
-   - `TRIGRAMME` : les trois lettres minuscules du groupe, à la place de `abc`.
-4. Lancer le serveur : `npm run dev`.
-5. Dans un second terminal, exposer le serveur avec ngrok : `ngrok http 3000` (ngrok doit être installé et configuré).
-6. Dans le portail Discord, renseigner Interactions Endpoint URL avec l’URL HTTPS fournie par ngrok suivie de `/interactions`, puis sauvegarder.
-7. Enregistrer la commande sur le serveur de test : `npm run register`.
-8. Tester `/abc-ping` dans Discord, en remplaçant `abc` par le trigramme choisi.
+1. Exécuter `npm install`.
+2. Au premier démarrage seulement, copier `.env.example` vers `.env` sans écraser une configuration existante.
+3. Compléter `DISCORD_TOKEN`, `APP_ID`, `GUILD_ID` et `TRIGRAMME` (trois lettres minuscules). Définir `BOT_API_TOKEN` avec un secret aléatoire, par exemple généré avec `node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))"`.
+4. Lancer l’API : `npm start` (ou `npm run dev` pour le rechargement automatique).
+5. Dans un autre terminal, lancer le bot : `npm run bot`.
+6. Enregistrer les commandes une fois, puis après chaque modification de leur définition : `npm run register`.
 
-L’installation de l’application sur le serveur doit autoriser `applications.commands`.
-Le serveur local et ngrok doivent rester lancés pour recevoir les commandes.
-Si l’URL ngrok change, mettre à jour Interactions Endpoint URL.
+Le bot utilise la connexion Discord Gateway : aucun ngrok ni endpoint HTTP d’interactions n’est nécessaire. Si un ancien endpoint d’interactions est configuré dans le portail Discord, le retirer pour utiliser le Gateway.
+
+### Commandes
+
+Remplacer `abc` par votre trigramme configuré.
 
 | Commande | Paramètres | Fonction |
 | --- | --- | --- |
-| `/abc-ping` | Aucun | Répond pour vérifier le fonctionnement du bot. |
+| `/blep` | `animal` | Commande d’exemple conservée. |
+| `/abc-presence` | `date` (`AAAA-MM-JJ`) | Consulter ses émargements à cette date. |
+| `/abc-emarger` | `date`, `demi-journee` (`matin` ou `apres-midi`), `statut` (`present` ou `absent`), `motif` | Enregistrer ou remplacer son émargement ; motif obligatoire si absent. |
 
-Cette commande technique ne consulte ni ne modifie les présences.
-Les commandes métier, le spreadsheet et l’authentification restent à implémenter.
-Ne jamais committer `.env`. Le token du bot est distinct des tokens de session exigés par le sujet.
+Le bot prend l’identifiant de l’auteur de la commande : aucun paramètre ne permet de choisir un autre étudiant. Les réponses de présence sont privées.
+
+### Stockage et API
+
+Le CSV `data/presences.csv` est créé lors du premier enregistrement. Ses colonnes sont `discordId,date,demiJournee,statut,motif`. Une ligne correspond à un étudiant, une date et une demi-journée ; une nouvelle déclaration pour cette combinaison remplace l’ancienne. Les motifs contenant des virgules ou des retours à la ligne sont pris en charge.
+
+Toutes les routes exigent l’en-tête `Authorization: Bearer <BOT_API_TOKEN>` :
+
+- `GET /api/presences?discordId=...&date=AAAA-MM-JJ` : consultation ; date facultative.
+- `POST /api/presences` : corps JSON avec les cinq colonnes ci-dessus ; réponse 201 à la création, 200 au remplacement.
+
+L’API écoute par défaut sur `127.0.0.1:3000`. `API_URL` indique au bot l’adresse de l’API ; `CSV_PATH` définit le chemin du fichier, relatif au dossier de lancement. `HOST` et `PORT` configurent l’écoute. Pour héberger sur deux machines, exposer l’API derrière HTTPS et configurer `API_URL` en conséquence. Garder les secrets et le CSV hors de Git.
+
+Lancer une seule instance de l’API par CSV. Les écritures sont mises en file et le remplacement du fichier est atomique ; ne pas modifier le CSV manuellement pendant les écritures de l’API.
+
+### Validation et limites
+
+`npm test` vérifie l’authentification de l’API, les paramètres, la persistance, les écritures simultanées et les champs CSV contenant des virgules ou retours à la ligne.
+
+Cette étape fournit un stockage CSV local derrière une API, sans interface de tableur. Elle ne constitue pas encore l’application complète du sujet : la structure du spreadsheet fourni en cours reste à intégrer, ainsi que les fenêtres d’émargement, les sessions utilisateur avec expiration, OAuth2, React et l’administration. Le secret du bot authentifie le programme et ne remplace pas les sessions utilisateur exigées.

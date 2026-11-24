@@ -1,6 +1,9 @@
 import 'dotenv/config';
+import { commands } from './commands.js';
 
-
+for (const name of ['APP_ID', 'GUILD_ID', 'DISCORD_TOKEN']) {
+  if (!process.env[name]) throw new Error(`${name} est obligatoire.`);
+}
 const url = `https://discord.com/api/v10/applications/${process.env.APP_ID}/guilds/${process.env.GUILD_ID}/commands`;
 
 // Chaque objet décrit une commande à enregistrer sur le serveur Discord.
