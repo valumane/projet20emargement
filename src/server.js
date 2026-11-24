@@ -71,7 +71,7 @@ export function createServer({ csvFile = defaultCsvFile } = {}) {
     }
   });
 
-  // Le site de ton binôme charge le fichier CSV directement à cette adresse.
+  // Le site charge le fichier CSV directement à cette adresse.
   app.get('/data/presences.csv', (req, res) => {
     res.set('Cache-Control', 'no-store');
     res.sendFile(resolve(csvFile));
